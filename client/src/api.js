@@ -45,3 +45,11 @@ export const authApi = {
   me: () =>
     apiFetch('/api/auth/me'),
 }
+
+export const checkoutApi = {
+  submit: (customerName, phone, address, cartItems) =>
+    apiFetch('/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ customerName, phone, address, cartItems }),
+    }),
+}

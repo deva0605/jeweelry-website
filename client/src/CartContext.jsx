@@ -27,6 +27,8 @@ export function CartProvider({ children }) {
         .filter((i) => i.qty > 0)
     )
 
+  const clearCart = () => setItems([])
+
   const totalCount = items.reduce((s, i) => s + i.qty, 0)
 
   const totalPrice = items.reduce((s, i) => {
@@ -36,7 +38,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addToCart, removeFromCart, updateQty, totalCount, totalPrice }}
+      value={{ items, addToCart, removeFromCart, updateQty, clearCart, totalCount, totalPrice }}
     >
       {children}
     </CartContext.Provider>
