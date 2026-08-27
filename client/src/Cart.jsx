@@ -31,7 +31,7 @@ export default function Cart({ isOpen, onClose }) {
     setCheckoutError('')
 
     try {
-      const cartItems = items.map(item => ({ id: item.id, qty: item.qty }))
+      const cartItems = items.map(item => ({ productId: item.id, quantity: item.qty }))
       const { orderId } = await checkoutApi.submit(
         formData.customerName,
         formData.phone,
@@ -42,7 +42,12 @@ export default function Cart({ isOpen, onClose }) {
       clearCart()
 
       const message = encodeURIComponent(`Hi, I am ready to pay for order #${orderId}`)
-      window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank')
+      
+      // Reset form and close cart after successful redirect
+      setShowForm(false)
+      setFormData({ customerName: '', phone: '', address: '' })
+      setIsCheckingOut(false)
     } catch (err) {
       setCheckoutError(err.message || 'Checkout failed. Please try again.')
       setIsCheckingOut(false)

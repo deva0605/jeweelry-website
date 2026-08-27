@@ -12,7 +12,7 @@
 
 const { validationResult } = require('express-validator')
 const { nanoid } = require('nanoid')
-const db = require('../db')
+const pool = require('../db')
 
 /**
  * POST /api/checkout
@@ -22,7 +22,7 @@ const db = require('../db')
  *   customerName: string,
  *   phone: string (10-digit Indian mobile),
  *   address: string,
- *   cartItems: [{ id: string, qty: number }]
+ *   cartItems: [{ productId: string, quantity: number }] or [{ id: string, qty: number }]
  * }
  * 
  * Response:
@@ -31,7 +31,7 @@ const db = require('../db')
  *   grandTotal: number (in paise)
  * }
  */
-exports.submit = (req, res) => {
+exports.submit = async (req, res) => {
   // Validate input
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -46,63 +46,70 @@ exports.submit = (req, res) => {
     return res.status(400).json({ error: 'Cart cannot be empty.' })
   }
 
+  // Normalize cart items (support both {id, qty} and {productId, quantity})
+  const normalizedCartItems = cartItems.map(item => ({
+    productId: item.productId || item.id,
+    quantity: item.quantity || item.qty,
+  }))
+
   // Validate cart item structure
-  for (const item of cartItems) {
-    if (!item.id || typeof item.id !== 'string') {
+  for (const item of normalizedCartItems) {
+    if (!item.productId || typeof item.productId !== 'string') {
       return res.status(400).json({ error: 'Invalid cart item format.' })
     }
-    if (!item.qty || typeof item.qty !== 'number' || item.qty < 1 || item.qty > 100) {
+    if (!item.quantity || typeof item.quantity !== 'number' || item.quantity < 1 || item.quantity > 100) {
       return res.status(400).json({ error: 'Invalid quantity. Must be between 1 and 100.' })
     }
   }
 
+  const client = await pool.connect()
+
   try {
+    await client.query('BEGIN')
+
     // Fetch all product prices from database (server-side pricing)
-    const productIds = cartItems.map(item => item.id)
-    const placeholders = productIds.map(() => '?').join(',')
+    const productIds = normalizedCartItems.map(item => item.productId)
+    const placeholders = productIds.map((_, i) => `$${i + 1}`).join(',')
     
-    const products = db.prepare(
-      `SELECT id, price_inr FROM products WHERE id IN (${placeholders})`
-    ).all(...productIds)
+    const productResult = await client.query(
+      `SELECT id, price_inr FROM products WHERE id IN (${placeholders})`,
+      productIds
+    )
 
     // Check if all products exist
-    if (products.length !== cartItems.length) {
+    if (productResult.rows.length !== normalizedCartItems.length) {
+      await client.query('ROLLBACK')
       return res.status(400).json({ error: 'One or more products not found.' })
     }
 
     // Create price lookup map
     const priceMap = {}
-    products.forEach(p => {
-      priceMap[p.id] = p.price_inr
+    productResult.rows.forEach(p => {
+      priceMap[p.id] = parseInt(p.price_inr)
     })
 
     // Calculate grand total (server-side only)
     let grandTotal = 0
-    for (const item of cartItems) {
-      const price = priceMap[item.id]
+    for (const item of normalizedCartItems) {
+      const price = priceMap[item.productId]
       if (!price) {
-        return res.status(400).json({ error: `Product ${item.id} not found.` })
+        await client.query('ROLLBACK')
+        return res.status(400).json({ error: `Product ${item.productId} not found.` })
       }
-      grandTotal += price * item.qty
+      grandTotal += price * item.quantity
     }
 
     // Generate unique 8-character order ID
     const orderId = `ORD-${nanoid(8).toUpperCase()}`
 
     // Insert order into database
-    const insertOrder = db.prepare(`
-      INSERT INTO orders (id, customer_name, phone, address, cart_items, grand_total, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'PENDING')
-    `)
-
-    insertOrder.run(
-      orderId,
-      customerName,
-      phone,
-      address,
-      JSON.stringify(cartItems),
-      grandTotal
+    await client.query(
+      `INSERT INTO orders (id, customer_name, phone, address, cart_items, grand_total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')`,
+      [orderId, customerName, phone, address, JSON.stringify(normalizedCartItems), grandTotal]
     )
+
+    await client.query('COMMIT')
 
     console.log(`[checkout] Order created: ${orderId} | Total: ₹${(grandTotal / 100).toFixed(2)}`)
 
@@ -112,7 +119,10 @@ exports.submit = (req, res) => {
     })
 
   } catch (err) {
+    await client.query('ROLLBACK')
     console.error('[checkout] Error processing order:', err)
     res.status(500).json({ error: 'Failed to process checkout. Please try again.' })
+  } finally {
+    client.release()
   }
 }

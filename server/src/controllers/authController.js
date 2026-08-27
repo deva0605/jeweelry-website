@@ -16,29 +16,7 @@ const bcrypt = require('bcryptjs')
 const jwt    = require('jsonwebtoken')
 const { validationResult } = require('express-validator')
 const config = require('../config')
-const db     = require('../db')
-
-// ── Prepared statements (compiled once, reused safely) ────────────────────
-const stmtFindByEmail = db.prepare(
-  'SELECT id, name, email, password_hash, failed_login_attempts, locked_until FROM users WHERE email = ? COLLATE NOCASE'
-)
-const stmtInsertUser = db.prepare(
-  'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)'
-)
-const stmtResetAttempts = db.prepare(
-  'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?'
-)
-const stmtIncrementAttempts = db.prepare(`
-  UPDATE users
-  SET
-    failed_login_attempts = failed_login_attempts + 1,
-    locked_until = CASE
-      WHEN failed_login_attempts + 1 >= ?
-      THEN datetime('now', '+' || ? || ' minutes')
-      ELSE locked_until
-    END
-  WHERE id = ?
-`)
+const pool   = require('../db')
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -64,7 +42,7 @@ function clearAuthCookie(res) {
 
 function isLocked(user) {
   if (!user.locked_until) return false
-  return new Date(user.locked_until + 'Z') > new Date()
+  return new Date(user.locked_until) > new Date()
 }
 
 // ── Controllers ───────────────────────────────────────────────────────────
@@ -83,8 +61,11 @@ async function register(req, res) {
 
   try {
     // 2. Check for existing account (parameterised)
-    const existing = stmtFindByEmail.get(email)
-    if (existing) {
+    const existingResult = await pool.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
+    )
+    if (existingResult.rows.length > 0) {
       // Generic message — don't reveal whether the email is registered
       return res.status(409).json({ error: 'An account with that email already exists.' })
     }
@@ -93,13 +74,17 @@ async function register(req, res) {
     const hash = await bcrypt.hash(password, config.bcryptRounds)
 
     // 4. Insert user (parameterised)
-    const result = stmtInsertUser.run(name.trim(), email.trim().toLowerCase(), hash)
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
+      [name.trim(), email.trim().toLowerCase(), hash]
+    )
+    const newUserId = result.rows[0].id
 
     // 5. Issue JWT cookie
-    issueAuthCookie(res, result.lastInsertRowid)
+    issueAuthCookie(res, newUserId)
 
     return res.status(201).json({
-      user: { id: result.lastInsertRowid, name: name.trim(), email: email.trim().toLowerCase() },
+      user: { id: newUserId, name: name.trim(), email: email.trim().toLowerCase() },
     })
   } catch (err) {
     // Log full error server-side only
@@ -122,7 +107,11 @@ async function login(req, res) {
 
   try {
     // 2. Find user (parameterised)
-    const user = stmtFindByEmail.get(email)
+    const userResult = await pool.query(
+      'SELECT id, name, email, password_hash, failed_login_attempts, locked_until FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
+    )
+    const user = userResult.rows[0]
 
     // 3. Generic "invalid credentials" — do NOT reveal whether email exists
     //    Still run bcrypt to prevent timing-based email enumeration
@@ -141,16 +130,26 @@ async function login(req, res) {
     // 5. Verify password (constant-time)
     const valid = await bcrypt.compare(password, user.password_hash)
     if (!valid) {
-      stmtIncrementAttempts.run(
-        config.auth.maxLoginAttempts,
-        config.auth.lockDurationMinutes,
-        user.id
+      // Increment attempts
+      await pool.query(
+        `UPDATE users
+         SET failed_login_attempts = failed_login_attempts + 1,
+             locked_until = CASE
+               WHEN failed_login_attempts + 1 >= $1
+               THEN NOW() + ($2 || ' minutes')::INTERVAL
+               ELSE locked_until
+             END
+         WHERE id = $3`,
+        [config.auth.maxLoginAttempts, config.auth.lockDurationMinutes, user.id]
       )
       return res.status(401).json({ error: 'Invalid email or password.' })
     }
 
     // 6. Success — reset failed attempts and issue cookie
-    stmtResetAttempts.run(user.id)
+    await pool.query(
+      'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1',
+      [user.id]
+    )
     issueAuthCookie(res, user.id)
 
     return res.json({

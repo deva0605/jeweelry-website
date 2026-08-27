@@ -8,14 +8,9 @@
 
 const jwt    = require('jsonwebtoken')
 const config = require('../config')
-const db     = require('../db')
+const pool   = require('../db')
 
-// Prepared statement — reused across requests for efficiency
-const findUserById = db.prepare(
-  'SELECT id, name, email FROM users WHERE id = ?'
-)
-
-module.exports = function requireAuth(req, res, next) {
+module.exports = async function requireAuth(req, res, next) {
   const token = req.cookies?.auth_token
 
   if (!token) {
@@ -30,12 +25,21 @@ module.exports = function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Session expired. Please sign in again.' })
   }
 
-  // Re-fetch the user to catch deleted/suspended accounts
-  const user = findUserById.get(payload.sub)
-  if (!user) {
-    return res.status(401).json({ error: 'Account not found.' })
-  }
+  try {
+    // Re-fetch the user to catch deleted/suspended accounts
+    const userResult = await pool.query(
+      'SELECT id, name, email FROM users WHERE id = $1',
+      [payload.sub]
+    )
 
-  req.user = user
-  next()
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Account not found.' })
+    }
+
+    req.user = userResult.rows[0]
+    next()
+  } catch (err) {
+    console.error('[auth middleware] Error checking user:', err)
+    return res.status(500).json({ error: 'Authentication check failed.' })
+  }
 }
