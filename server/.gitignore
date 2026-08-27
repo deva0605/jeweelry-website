@@ -1,0 +1,15 @@
+# ── Node ──
+node_modules/
+npm-debug.log*
+
+# ── Secrets — NEVER commit the real .env ──
+.env
+
+# ── Database file (contains user data) ──
+*.sqlite
+*.sqlite3
+*.db
+
+# ── OS ──
+.DS_Store
+Thumbs.db

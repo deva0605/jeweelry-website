@@ -1,0 +1,12 @@
+# Normalise all text files to LF in the repo, checkout as-is on Windows
+* text=auto eol=lf
+
+# Binary files — no line-ending conversion
+*.jpeg binary
+*.jpg  binary
+*.png  binary
+*.gif  binary
+*.ico  binary
+*.svg  text
+*.woff2 binary
+*.woff  binary

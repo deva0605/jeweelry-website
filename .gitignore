@@ -1,0 +1,37 @@
+# ══════════════════════════════════════════════════
+#  Root .gitignore — covers the entire monorepo
+# ══════════════════════════════════════════════════
+
+# ── Dependencies ──────────────────────────────────
+**/node_modules/
+
+# ── Environment files (contain secrets) ──────────
+**/.env
+# Allow the sanitised examples
+!**/.env.example
+
+# ── Build output ──────────────────────────────────
+client/dist/
+client/.vite/
+
+# ── Database (contains user data) ─────────────────
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+server/data/
+
+# ── Logs ──────────────────────────────────────────
+**/npm-debug.log*
+**/yarn-error.log*
+**/*.log
+
+# ── OS artefacts ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor artefacts ──────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
