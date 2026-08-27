@@ -43,4 +43,37 @@ const loginLimiter = rateLimit({
   },
 })
 
-module.exports = { authLimiter, loginLimiter }
+/** Checkout limiter — prevent abuse of SQLite checkout endpoint */
+const checkoutLimiter = rateLimit({
+  windowMs:          WINDOW_MS,
+  max:               5,
+  standardHeaders:   true,
+  legacyHeaders:     false,
+  skipSuccessfulRequests: false,
+  handler: (_req, res) => {
+    res.status(429).json({
+      error: 'Too many checkout attempts. Please wait 15 minutes and try again.',
+    })
+  },
+})
+
+/**
+ * orderLimiter — applied strictly to POST /api/orders/checkout.
+ * 5 requests per 15-minute window per IP.
+ * Prevents spam bots from flooding the orders table with fake PENDING rows.
+ */
+const orderLimiter = rateLimit({
+  windowMs:          WINDOW_MS,
+  max:               5,
+  standardHeaders:   true,  // Sends standard RateLimit-* headers to the client
+  legacyHeaders:     false,
+  skipSuccessfulRequests: false,
+  handler: (_req, res) => {
+    res.status(429).json({
+      success: false,
+      error: 'Too many checkout attempts. Please wait 15 minutes and try again.',
+    })
+  },
+})
+
+module.exports = { authLimiter, loginLimiter, checkoutLimiter, orderLimiter }

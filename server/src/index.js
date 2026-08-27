@@ -18,7 +18,9 @@ const helmet       = require('helmet')
 const cors         = require('cors')
 const cookieParser = require('cookie-parser')
 
-const authRoutes   = require('./routes/auth')
+const authRoutes     = require('./routes/auth')
+const checkoutRoutes = require('./routes/checkout')
+const orderRoutes    = require('./routes/orders')
 
 const app = express()
 
@@ -45,6 +47,8 @@ app.use(cookieParser(config.cookie.secret))
 
 // ── Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes)
+app.use('/api/checkout', checkoutRoutes)
+app.use('/api/orders', orderRoutes)
 
 // Health check (useful for uptime monitors, no sensitive data)
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))

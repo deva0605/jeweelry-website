@@ -102,3 +102,4 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 | Backend | Express 4.22, better-sqlite3 13 |
 | Auth | bcryptjs, jsonwebtoken (httpOnly cookie) |
 | Security | Helmet, express-rate-limit, express-validator, CORS |
+
