@@ -1,17 +1,29 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './Footer.css'
 
 export default function Footer() {
+  const [email, setEmail] = useState('')
+  const [subscribed, setSubscribed] = useState(false)
+
+  const handleSubscribe = (event) => {
+    event.preventDefault()
+    setEmail('')
+    setSubscribed(true)
+    window.setTimeout(() => setSubscribed(false), 3000)
+  }
+
   return (
     <footer className="luxury-footer">
       <div className="luxury-footer__newsletter">
         <p className="luxury-footer__eyebrow">The private edit</p>
         <h2>Join our world of considered adornment.</h2>
-        <form onSubmit={(event) => event.preventDefault()}>
+        <form onSubmit={handleSubscribe}>
           <label className="sr-only" htmlFor="newsletter-email">Email address</label>
-          <input id="newsletter-email" type="email" placeholder="Your email address" required />
+          <input id="newsletter-email" type="email" placeholder="Your email address" value={email} onChange={(event) => setEmail(event.target.value)} required />
           <button className="btn-luxury" type="submit">Subscribe</button>
         </form>
+        {subscribed && <p className="luxury-footer__success" role="status">Subscription successful.</p>}
       </div>
       <div className="luxury-footer__links">
         <div>
@@ -22,9 +34,9 @@ export default function Footer() {
         </div>
         <div>
           <p className="luxury-footer__eyebrow">Care & service</p>
-          <a href="#care">Care guide</a>
-          <a href="#terms">Terms of service</a>
-          <a href="mailto:concierge@formobject.com">Concierge support</a>
+          <Link to="/">Care guide</Link>
+          <Link to="/">Terms of service</Link>
+          <Link to="/">Concierge support</Link>
         </div>
       </div>
       <div className="luxury-footer__bottom">

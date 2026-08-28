@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import editorialImg from '../assests/WhatsApp Image 2026-08-24 at 11.39.23 PM (1).jpeg'
 import journalImg from '../assests/WhatsApp Image 2026-08-24 at 11.39.14 PM.jpeg'
 import detailImg from '../assests/WhatsApp Image 2026-08-24 at 11.38.10 PM.jpeg'
@@ -25,7 +24,9 @@ export default function Journal() {
             <div className="journal-card__image"><img src={image} alt="" loading="lazy" /></div>
             <p className="journal-card__meta">Editorial · {readTime}</p>
             <h2>{title}</h2>
-            <Link to="/collections">Read story <span>↗</span></Link>
+            <button className="journal-card__read" type="button" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+              Read story <span>↗</span>
+            </button>
           </article>
         ))}
       </section>

@@ -5,16 +5,16 @@ import { useCart } from './CartContext'
 import Footer from './Footer'
 import './Collections.css'
 
-const COLLECTION_FILTERS = ['ALL', 'RINGS', 'NECKLACES', 'EARRINGS', 'BRACELETS']
+const COLLECTION_FILTERS = ['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets']
 
 export default function Collections() {
-  const [category, setCategory] = useState('ALL')
+  const [category, setCategory] = useState('All')
   const { addToCart } = useCart()
-  const visible = category === 'ALL'
+  const visible = category === 'All'
     ? PRODUCTS
     : PRODUCTS.filter((product) => {
-      if (category === 'NECKLACES') return ['CHAINS', 'PENDANTS'].includes(product.category)
-      return product.category === category
+      if (category === 'Necklaces') return ['CHAINS', 'PENDANTS'].includes(product.category)
+      return product.category === category.toUpperCase()
     })
 
   return (
@@ -28,7 +28,7 @@ export default function Collections() {
         <span>{String(visible.length).padStart(2, '0')} pieces</span>
         <div className="collections__filters">
           {COLLECTION_FILTERS.map((filter) => (
-            <button className={category === filter ? 'is-active' : ''} type="button" key={filter} onClick={() => setCategory(filter)}>
+            <button className={category === filter ? 'active' : ''} type="button" key={filter} onClick={() => setCategory(filter)}>
               {filter}
             </button>
           ))}

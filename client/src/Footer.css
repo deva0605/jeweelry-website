@@ -32,6 +32,13 @@
   border-bottom: 1px solid var(--color-ink);
 }
 
+.luxury-footer__success {
+  color: var(--color-gold);
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  margin-top: 12px;
+}
+
 .luxury-footer input {
   flex: 1;
   min-width: 0;

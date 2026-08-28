@@ -186,9 +186,9 @@ export default function Cart({ isOpen, onClose }) {
                 <li><span className="cart__trust-icon" aria-hidden="true">₹</span>Direct UPI Payment Verification</li>
               </ul>
               <button
-                className="btn btn-luxury cart__checkout"
+                className="btn btn-luxury concierge-checkout cart__checkout"
                 type="submit"
-                disabled={isCheckingOut}
+                disabled={isCheckingOut || items.length === 0}
                 aria-busy={isCheckingOut}
               >
                 {isCheckingOut ? (
