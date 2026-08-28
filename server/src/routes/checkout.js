@@ -15,23 +15,27 @@ const router = Router()
 
 const checkoutRules = [
   body('customerName')
+    .if((value, { req }) => !req.body.customer)
     .trim()
     .notEmpty().withMessage('Customer name is required.')
     .isLength({ max: 100 }).withMessage('Name must be 100 characters or fewer.')
     .escape(),
 
   body('phone')
+    .if((value, { req }) => !req.body.customer)
     .trim()
     .notEmpty().withMessage('Phone number is required.')
     .matches(/^[6-9]\d{9}$/).withMessage('Please enter a valid 10-digit Indian mobile number.'),
 
   body('address')
+    .if((value, { req }) => !req.body.customer)
     .trim()
     .notEmpty().withMessage('Address is required.')
     .isLength({ max: 500 }).withMessage('Address must be 500 characters or fewer.')
     .escape(),
 
   body('cartItems')
+    .if((value, { req }) => !req.body.customer)
     .isArray({ min: 1 }).withMessage('Cart cannot be empty.')
     .custom((items) => {
       for (const item of items) {

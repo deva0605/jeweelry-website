@@ -11,8 +11,8 @@
 'use strict'
 
 const { validationResult } = require('express-validator')
-const { nanoid } = require('nanoid')
 const pool = require('../db')
+const crypto = require('crypto')
 
 const formatWhatsAppNumber = (phone) => {
   let number = String(phone).replace(/\D/g, '')
@@ -73,6 +73,35 @@ const dispatchConciergeMessage = async ({ phone, customerName, address, items, t
  * }
  */
 exports.processCheckout = async (req, res) => {
+  // Support the concierge payload directly while retaining the original
+  // customerName/phone/address/cartItems contract used by the storefront.
+  if (req.body.customer && Array.isArray(req.body.items)) {
+    const { customer, items, total } = req.body
+    if (!customer.phone || items.length === 0 || typeof total !== 'number' || !Number.isFinite(total)) {
+      return res.status(400).json({ error: 'Invalid checkout payload' })
+    }
+
+    try {
+      const orderId = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
+      await dispatchConciergeMessage({
+        phone: customer.phone,
+        customerName: customer.name || 'there',
+        address: [customer.address, customer.city, customer.zip].filter(Boolean).join(', '),
+        total: total * 100,
+        orderId,
+        items: items.map(item => ({
+          name: item.name || item.productId || item.id || 'Jewelry piece',
+          quantity: item.quantity,
+          price: Number(item.price) * 100,
+        })),
+      })
+      return res.status(200).json({ success: true, orderId })
+    } catch (error) {
+      console.error('[checkout] Concierge dispatch error:', error)
+      return res.status(502).json({ error: 'Failed to dispatch WhatsApp message' })
+    }
+  }
+
   // Validate input
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
@@ -103,9 +132,9 @@ exports.processCheckout = async (req, res) => {
     }
   }
 
-  const client = await pool.connect()
-
+  let client
   try {
+    client = await pool.connect()
     await client.query('BEGIN')
 
     // Fetch all product prices from database (server-side pricing)
@@ -119,7 +148,7 @@ exports.processCheckout = async (req, res) => {
 
     // Check if all products exist
     if (productResult.rows.length !== normalizedCartItems.length) {
-      await client.query('ROLLBACK')
+      if (client) await client.query('ROLLBACK')
       return res.status(400).json({ error: 'One or more products not found.' })
     }
 
@@ -141,7 +170,7 @@ exports.processCheckout = async (req, res) => {
     }
 
     // Generate unique 8-character order ID
-    const orderId = `ORD-${nanoid(8).toUpperCase()}`
+    const orderId = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
 
     // Insert order into database
     await client.query(
@@ -173,11 +202,11 @@ exports.processCheckout = async (req, res) => {
     })
 
   } catch (err) {
-    await client.query('ROLLBACK')
+    if (client) await client.query('ROLLBACK')
     console.error('[checkout] Error processing order:', err)
     res.status(500).json({ error: 'Failed to process checkout. Please try again.' })
   } finally {
-    client.release()
+    if (client) client.release()
   }
 }
 
