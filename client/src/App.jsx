@@ -7,6 +7,9 @@ import { useAuth } from './AuthContext'
 import Cart from './Cart'
 import Auth from './Auth'
 import ProductDetail from './ProductDetail'
+import Collections from './Collections'
+import Journal from './Journal'
+import Footer from './Footer'
 
 /* Hero & editorial images */
 import heroImg      from '../assests/WhatsApp Image 2026-08-24 at 11.38.09 PM.jpeg'
@@ -20,8 +23,8 @@ function Nav({ dark, setDark, onCartOpen }) {
   return (
     <nav className="nav">
       <ul className="nav__links">
-        <li><Link to="/#collection" className="nav__link">Collection</Link></li>
-        <li><Link to="/#journal"    className="nav__link">Journal</Link></li>
+        <li><Link to="/collections" className="nav__link">Collection</Link></li>
+        <li><Link to="/journal" className="nav__link">Journal</Link></li>
       </ul>
 
       <Link to="/" className="wordmark">Form / Object</Link>
@@ -182,14 +185,7 @@ function Home() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="footer">
-        <span>Form / Object © 2024</span>
-        <span>Sterling · Gold · Intention</span>
-        <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
-          Back to top ↑
-        </a>
-      </footer>
+      <Footer />
     </div>
   )
 }
@@ -209,6 +205,8 @@ export default function App() {
 
       <Routes>
         <Route path="/"            element={<Home />} />
+        <Route path="/collections" element={<Collections />} />
+        <Route path="/journal"     element={<Journal />} />
         <Route path="/product/:id" element={<ProductDetail onCartOpen={() => setCartOpen(true)} />} />
       </Routes>
 

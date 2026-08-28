@@ -39,7 +39,20 @@
 }
 
 .nav__link:hover,
-.nav__bag:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nav__bag:hover { text-decoration: none; }
+
+.nav__link { position: relative; }
+.nav__link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -8px;
+  height: 1px;
+  background: var(--color-gold);
+  transition: right 0.3s ease;
+}
+.nav__link:hover::after { right: 0; }
 
 .nav__user {
   font-size: var(--text-caption);
@@ -488,6 +501,23 @@
 }
 
 .btn:hover { background: var(--color-ink); color: var(--color-canvas); }
+
+.btn-luxury {
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  padding: 14px 18px;
+  font: 500 var(--text-caption) var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.btn-luxury:hover {
+  background: var(--color-gold);
+  color: var(--color-ink);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(197, 168, 128, 0.2);
+}
 
 /* ─── CHECKBOX ─── */
 .checkbox-row {

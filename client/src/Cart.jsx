@@ -180,12 +180,13 @@ export default function Cart({ isOpen, onClose }) {
                 <span>₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
               <ul className="cart__trust-list" aria-label="Concierge assurances">
-                <li><span className="cart__trust-icon" aria-hidden="true">✦</span>100% Certified Purity</li>
+                <li><span className="cart__trust-icon" aria-hidden="true">✓</span>BIS Hallmarked &amp; Certified Purity</li>
                 <li><span className="cart__trust-icon" aria-hidden="true">◇</span>Insured Doorstep Delivery</li>
+                <li><span className="cart__trust-icon" aria-hidden="true">✓</span>Certificate of Authenticity Included</li>
                 <li><span className="cart__trust-icon" aria-hidden="true">₹</span>Direct UPI Payment Verification</li>
               </ul>
               <button
-                className="btn cart__checkout"
+                className="btn btn-luxury cart__checkout"
                 type="submit"
                 disabled={isCheckingOut}
                 aria-busy={isCheckingOut}

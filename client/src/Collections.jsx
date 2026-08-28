@@ -1,0 +1,56 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { PRODUCTS } from './data'
+import { useCart } from './CartContext'
+import Footer from './Footer'
+import './Collections.css'
+
+const COLLECTION_FILTERS = ['ALL', 'RINGS', 'NECKLACES', 'EARRINGS', 'BRACELETS']
+
+export default function Collections() {
+  const [category, setCategory] = useState('ALL')
+  const { addToCart } = useCart()
+  const visible = category === 'ALL'
+    ? PRODUCTS
+    : PRODUCTS.filter((product) => {
+      if (category === 'NECKLACES') return ['CHAINS', 'PENDANTS'].includes(product.category)
+      return product.category === category
+    })
+
+  return (
+    <main className="collections">
+      <header className="collections__hero">
+        <p className="collections__eyebrow">The collection / 2026</p>
+        <h1>Sculpted<br />Silhouettes</h1>
+        <p>Hand-finished in 18k gold vermeil and solid 925 silver.</p>
+      </header>
+      <div className="collections__toolbar">
+        <span>{String(visible.length).padStart(2, '0')} pieces</span>
+        <div className="collections__filters">
+          {COLLECTION_FILTERS.map((filter) => (
+            <button className={category === filter ? 'is-active' : ''} type="button" key={filter} onClick={() => setCategory(filter)}>
+              {filter}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="product-grid collections__grid">
+        {visible.map((product) => (
+          <Link className="card" to={`/product/${product.id}`} key={product.id}>
+            <div className="card__img-wrap">
+              <img className="card__img-blur" src={product.img} alt="" aria-hidden="true" />
+              <img className="card__img-main" src={product.img} alt={product.name} loading="lazy" />
+              <button className="card__add" type="button" aria-label={`Add ${product.name} to cart`} onClick={(event) => { event.preventDefault(); addToCart(product) }}>+</button>
+            </div>
+            <div className="card__body">
+              <span className="card__tag">18K Gold Plated</span>
+              <p className="card__name">{product.name}</p>
+              <p className="card__price">{product.price}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <Footer />
+    </main>
+  )
+}

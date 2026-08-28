@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { PRODUCTS } from './data'
 import { useCart } from './CartContext'
 import './ProductDetail.css'
+import Footer from './Footer'
 
 export default function ProductDetail({ onCartOpen }) {
   const { id }        = useParams()
@@ -30,6 +31,7 @@ export default function ProductDetail({ onCartOpen }) {
   }
 
   return (
+    <>
     <div className="pd">
       {/* ── Back link ── */}
       <button className="pd__back" onClick={() => navigate(-1)} type="button">
@@ -71,5 +73,7 @@ export default function ProductDetail({ onCartOpen }) {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   )
 }
