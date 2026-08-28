@@ -101,3 +101,18 @@
   .luxury-footer form button { margin-top: 14px; }
   .luxury-footer__bottom { flex-direction: column; }
 }
+
+@media (max-width: 768px) {
+  .luxury-footer__links {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+    max-width: none;
+  }
+  .luxury-footer__newsletter { text-align: center; }
+  .luxury-footer form { flex-direction: column; border: 0; gap: 12px; }
+  .luxury-footer input,
+  .luxury-footer form button { width: 100%; min-height: 44px; }
+  .luxury-footer input { border-bottom: 1px solid var(--color-ink); }
+  .luxury-footer__bottom { flex-direction: column; text-align: center; }
+}

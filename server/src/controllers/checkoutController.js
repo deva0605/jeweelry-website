@@ -27,7 +27,7 @@ const dispatchConciergeMessage = async ({ phone, customerName, address, items, t
     return
   }
 
-  const safeBusinessName = businessName || 'Private Jewelry Concierge'
+  const safeBusinessName = businessName || 'Ushhh.atelier'
   const upiLink = upiId
     ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(safeBusinessName)}&am=${(total / 100).toFixed(2)}&cu=INR&tn=Order_${orderId}`
     : 'UPI payment details will be shared by our concierge.'

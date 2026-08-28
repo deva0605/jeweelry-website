@@ -86,6 +86,7 @@
   font-weight: var(--fw-light);
   color: var(--color-ink);
   padding: var(--sp-4) 0;
+  min-height: 44px;
   transition: border-color 0.15s;
 }
 
@@ -153,4 +154,3 @@
   margin-top: var(--sp-4);
   align-self: flex-start;
 }
-

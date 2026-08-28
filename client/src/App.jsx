@@ -19,17 +19,22 @@ import editorialImg from '../assests/WhatsApp Image 2026-08-24 at 11.39.23 PM (1
 function Nav({ dark, setDark, onCartOpen }) {
   const { totalCount } = useCart()
   const { user }       = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const closeMenu = () => setMenuOpen(false)
 
   return (
-    <nav className="nav">
+    <nav className={`nav${menuOpen ? ' nav--menu-open' : ''}`}>
+      <button className="nav__menu-toggle" type="button" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+        <span /><span />
+      </button>
       <ul className="nav__links">
-        <li><Link to="/collections" className="nav__link">Collection</Link></li>
-        <li><Link to="/journal" className="nav__link">Journal</Link></li>
+        <li><Link to="/collections" className="nav__link" onClick={closeMenu}>Collections</Link></li>
+        <li><Link to="/journal" className="nav__link" onClick={closeMenu}>Journal</Link></li>
       </ul>
 
-      <Link to="/" className="wordmark">Form / Object</Link>
+      <Link to="/" className="wordmark" onClick={closeMenu}>Ushhh.atelier</Link>
 
-      <ul className="nav__links">
+      <ul className="nav__links nav__links--actions">
         {user && (
           <li>
             <span className="nav__user">Hi, {user.name}</span>
@@ -63,6 +68,12 @@ function Nav({ dark, setDark, onCartOpen }) {
           </button>
         </li>
       </ul>
+      <div className="nav__mobile-drawer" aria-hidden={!menuOpen}>
+        <Link to="/collections" onClick={closeMenu}>Collections</Link>
+        <Link to="/journal" onClick={closeMenu}>Journal</Link>
+        <Link to="/" onClick={closeMenu}>Account</Link>
+        <button type="button" onClick={() => { onCartOpen(); closeMenu() }}>Cart {totalCount > 0 ? `(${totalCount})` : ''}</button>
+      </div>
     </nav>
   )
 }

@@ -35,7 +35,7 @@
   min-height: calc(100svh - var(--nav-h) - 52px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .pd__layout { grid-template-columns: 1fr; }
 }
 
@@ -50,6 +50,13 @@
 
 @media (max-width: 768px) {
   .pd__img-panel { border-right: none; border-bottom: 1px solid var(--color-ink); }
+}
+
+@media (max-width: 860px) {
+  .pd { border-left: 0; border-right: 0; }
+  .pd__img-wrap { aspect-ratio: 3 / 4; }
+  .pd__info { padding: 36px 20px 48px; }
+  .pd__buy { max-width: none; min-height: 52px; }
 }
 
 .pd__img-wrap {
@@ -163,4 +170,3 @@
   align-items: center;
   gap: var(--sp-32);
 }
-

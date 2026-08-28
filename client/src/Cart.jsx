@@ -78,7 +78,7 @@ export default function Cart({ isOpen, onClose }) {
         {/* Header */}
         <div className="cart__header">
           <h2 className="cart__title">
-            {showForm ? 'Private Jewelry Concierge' : 'Your Bag'}
+            {showForm ? 'Ushhh.atelier Concierge' : 'Your Bag'}
             {!showForm && totalCount > 0 && (
               <span className="cart__count">{String(totalCount).padStart(2, '0')}</span>
             )}
