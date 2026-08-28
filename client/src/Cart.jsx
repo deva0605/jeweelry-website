@@ -78,7 +78,7 @@ export default function Cart({ isOpen, onClose }) {
         {/* Header */}
         <div className="cart__header">
           <h2 className="cart__title">
-            {showForm ? 'Checkout' : 'Your Bag'}
+            {showForm ? 'Private Jewelry Concierge' : 'Your Bag'}
             {!showForm && totalCount > 0 && (
               <span className="cart__count">{String(totalCount).padStart(2, '0')}</span>
             )}
@@ -179,6 +179,11 @@ export default function Cart({ isOpen, onClose }) {
                 <span>Total</span>
                 <span>₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
+              <ul className="cart__trust-list" aria-label="Concierge assurances">
+                <li><span className="cart__trust-icon" aria-hidden="true">✦</span>100% Certified Purity</li>
+                <li><span className="cart__trust-icon" aria-hidden="true">◇</span>Insured Doorstep Delivery</li>
+                <li><span className="cart__trust-icon" aria-hidden="true">₹</span>Direct UPI Payment Verification</li>
+              </ul>
               <button
                 className="btn cart__checkout"
                 type="submit"
@@ -191,7 +196,12 @@ export default function Cart({ isOpen, onClose }) {
                     Processing…
                   </>
                 ) : (
-                  <>Pay via WhatsApp 📲</>
+                  <>
+                    <svg className="cart__whatsapp-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.1 1.6 5.9L.2 24l6.5-1.7a11.8 11.8 0 0 0 5.4 1.3h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.3-6.1-3.5-8.3ZM12.2 21.6h-.1a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.9 1 1-3.8-.3-.4a9.8 9.8 0 1 1 8.7 4.8Zm5.4-7.3c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-1.6-.8-2.6-1.4-3.6-3.2-.3-.5.3-.5.8-1.7.1-.2 0-.4 0-.6s-.7-1.7-.9-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.6 0 1.5 1.1 3 1.2 3.2.2.2 2.1 3.3 5.1 4.6 1.9.8 2.3.7 3.1.6.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.4Z" />
+                    </svg>
+                    Confirm Order via Concierge
+                  </>
                 )}
               </button>
             </div>
@@ -276,4 +286,3 @@ export default function Cart({ isOpen, onClose }) {
     </>
   )
 }
-

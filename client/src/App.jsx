@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 import { PRODUCTS, FILTERS } from './data'
 import { useCart } from './CartContext'
@@ -154,6 +154,7 @@ function Home() {
                   <span>{p.code}</span>
                   <span>{p.category}</span>
                 </div>
+                <span className="card__tag">18K Gold Plated</span>
                 <p className="card__name">{p.name}</p>
                 <p className="card__price">{p.price}</p>
               </div>
