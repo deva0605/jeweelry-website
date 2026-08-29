@@ -1,7 +1,7 @@
 {
   "name": "jewellry-server",
   "version": "1.0.0",
-  "description": "Secure auth backend for Form / Object jewellery store",
+  "description": "Secure auth backend for Ushhh.atelier jewellery store",
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {

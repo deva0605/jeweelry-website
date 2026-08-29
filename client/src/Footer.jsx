@@ -36,7 +36,7 @@ export default function Footer() {
           <p className="luxury-footer__eyebrow">Care & service</p>
           <Link to="/">Care guide</Link>
           <Link to="/">Terms of service</Link>
-          <Link to="/">Concierge support</Link>
+          <Link to="/">Ushhh.atelier Concierge</Link>
         </div>
       </div>
       <div className="luxury-footer__bottom">

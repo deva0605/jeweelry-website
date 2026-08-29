@@ -1,5 +1,4 @@
-# Form / Object — Jewellery Store
-
+# Ushhh.atelier — Jewellery Store
 A minimal, editorial jewellery e-commerce website built with **React + Vite** (frontend) and **Express + SQLite** (backend).
 
 ---
