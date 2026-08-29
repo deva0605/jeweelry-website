@@ -3,7 +3,13 @@ import { useCart } from './CartContext'
 import { checkoutApi } from './api'
 import './Cart.css'
 
-const WHATSAPP_NUMBER = '918010369855'
+/**
+ * WhatsApp Business Number — read from environment variable
+ * VITE_WHATSAPP_NUMBER should be in format: 918010369855 (country code + 10-digit number)
+ * No + or - characters — digits only.
+ * This is PUBLIC information and is not a secret.
+ */
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER
 
 export default function Cart({ isOpen, onClose }) {
   const { items, removeFromCart, updateQty, totalCount, totalPrice, clearCart } = useCart()
@@ -27,10 +33,17 @@ export default function Cart({ isOpen, onClose }) {
     e.preventDefault()
     if (isCheckingOut) return
 
+    // Validate WhatsApp number is configured
+    if (!WHATSAPP_NUMBER) {
+      setCheckoutError('WhatsApp configuration is missing. Please contact support.')
+      return
+    }
+
     setIsCheckingOut(true)
     setCheckoutError('')
 
     try {
+      // Send canonical checkout payload to backend
       const cartItems = items.map(item => ({ productId: item.id, quantity: item.qty }))
       const { orderId } = await checkoutApi.submit(
         formData.customerName,
@@ -41,6 +54,10 @@ export default function Cart({ isOpen, onClose }) {
 
       clearCart()
 
+      // Open WhatsApp Click-to-Chat with ONLY the Order ID
+      // Customer address, pricing, and items are NOT included in the URL
+      // They remain server-side and are retrieved by future WhatsApp automation
+      // using the Order ID as the lookup key
       const message = encodeURIComponent(`Hi, I am ready to pay for order #${orderId}`)
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank')
       

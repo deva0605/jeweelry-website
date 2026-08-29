@@ -23,7 +23,7 @@ export default function Footer() {
           <input id="newsletter-email" type="email" placeholder="Your email address" value={email} onChange={(event) => setEmail(event.target.value)} required />
           <button className="btn-luxury" type="submit">Subscribe</button>
         </form>
-        {subscribed && <p className="luxury-footer__success" role="status">Subscription successful.</p>}
+        {subscribed && <p className="luxury-footer__success" role="status">Thanks for your interest. We'll be in touch.</p>}
       </div>
       <div className="luxury-footer__links">
         <div>
@@ -34,14 +34,14 @@ export default function Footer() {
         </div>
         <div>
           <p className="luxury-footer__eyebrow">Care & service</p>
-          <Link to="/">Care guide</Link>
-          <Link to="/">Terms of service</Link>
-          <Link to="/">Ushhh.atelier Concierge</Link>
+          <Link to="/care">Care guide</Link>
+          <Link to="/terms">Terms of service</Link>
+          <Link to="/concierge">Ushhh.atelier Concierge</Link>
         </div>
       </div>
       <div className="luxury-footer__bottom">
         <span>© 2026 Ushhh.atelier. All rights reserved.</span>
-        <span>BIS 925 · Certified Purity · Insured Delivery</span>
+        <span>Carefully crafted adornment.</span>
       </div>
     </footer>
   )

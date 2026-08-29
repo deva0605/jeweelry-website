@@ -1,11 +1,29 @@
 /**
  * controllers/checkoutController.js
  *
- * Handles secure checkout flow:
- * - Validates cart items against products table (server-side pricing)
- * - Generates unique order IDs with nanoid
- * - Stores orders in database with PENDING status
- * - Returns order details for WhatsApp redirect
+ * Secure server-side checkout flow with canonical contract.
+ *
+ * ONE CANONICAL PAYLOAD:
+ * {
+ *   customerName: string,
+ *   phone: 10-digit Indian mobile,
+ *   address: string,
+ *   cartItems: [{ productId: string, quantity: number }]
+ * }
+ *
+ * Responsibilities:
+ * 1. Validates request against canonical contract
+ * 2. Queries PostgreSQL for authoritative product prices (server-side pricing authority)
+ * 3. Calculates order total server-side ONLY — frontend price fields are IGNORED
+ * 4. Creates unique cryptographically-secure order ID (avoids sequential enumeration)
+ * 5. Inserts order with PENDING status in a database transaction
+ * 6. Returns order ID for frontend WhatsApp handoff
+ *
+ * IMPORTANT: Frontend can NEVER send price, total, or discount values.
+ * Those are always calculated from PostgreSQL as the authoritative source.
+ *
+ * Future WhatsApp automation should resolve this Order ID against the
+ * orders table rather than trusting customer-supplied pricing or product data.
  */
 
 'use strict'
@@ -14,95 +32,25 @@ const { validationResult } = require('express-validator')
 const pool = require('../db')
 const crypto = require('crypto')
 
-const formatWhatsAppNumber = (phone) => {
-  let number = String(phone).replace(/\D/g, '')
-  if (number.length === 10) number = `91${number}`
-  return number
-}
-
-const dispatchConciergeMessage = async ({ phone, customerName, address, items, total, orderId }) => {
-  const { WHATSAPP_TOKEN: token, WHATSAPP_PHONE_ID: phoneId, UPI_ID: upiId, BUSINESS_NAME: businessName } = process.env
-  if (!token || !phoneId) {
-    console.warn('[checkout] WhatsApp credentials missing. Skipping message dispatch.')
-    return
-  }
-
-  const safeBusinessName = businessName || 'Ushhh.atelier'
-  const upiLink = upiId
-    ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(safeBusinessName)}&am=${(total / 100).toFixed(2)}&cu=INR&tn=Order_${orderId}`
-    : 'UPI payment details will be shared by our concierge.'
-  const itemList = items.map(item => `• ${item.name} (x${item.quantity}) - ₹${(item.price / 100).toLocaleString('en-IN')}`).join('\n')
-  const messageText = `✨ *${safeBusinessName}* ✨\n\nHello ${customerName},\n\nThank you for your request. Your pieces are currently being reserved by our concierge.\n\n*Order ID:* ${orderId}\n*Total:* ₹${(total / 100).toLocaleString('en-IN')}\n\n*Items:*\n${itemList}\n\n*Delivery To:*\n${address}\n\nTo confirm your order, please complete your secure payment using the UPI link below:\n\n🔗 ${upiLink}\n\nOnce paid, please reply to this message with a screenshot of your transaction.`
-
-  const response = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: formatWhatsAppNumber(phone),
-      type: 'text',
-      text: { preview_url: false, body: messageText },
-    }),
-  })
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    console.error('[checkout] Meta API error:', data)
-    throw new Error('Failed to dispatch WhatsApp message')
-  }
-}
-
 /**
  * POST /api/checkout
- * 
- * Request body:
+ *
+ * Accepts the canonical checkout payload, creates a server-side order,
+ * and returns the order ID for the frontend WhatsApp Click-to-Chat handoff.
+ *
+ * Response (success):
  * {
- *   customerName: string,
- *   phone: string (10-digit Indian mobile),
- *   address: string,
- *   cartItems: [{ productId: string, quantity: number }] or [{ id: string, qty: number }]
+ *   orderId: "ORD-8F7A2B9C",
+ *   grandTotal: 259800
  * }
- * 
- * Response:
+ *
+ * Response (error):
  * {
- *   orderId: string (e.g., "ORD-8F7A2B9C"),
- *   grandTotal: number (in paise)
+ *   error: "Human-readable error message"
  * }
  */
 exports.processCheckout = async (req, res) => {
-  // Support the concierge payload directly while retaining the original
-  // customerName/phone/address/cartItems contract used by the storefront.
-  if (req.body.customer && Array.isArray(req.body.items)) {
-    const { customer, items, total } = req.body
-    if (!customer.phone || items.length === 0 || typeof total !== 'number' || !Number.isFinite(total)) {
-      return res.status(400).json({ error: 'Invalid checkout payload' })
-    }
-
-    try {
-      const orderId = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
-      await dispatchConciergeMessage({
-        phone: customer.phone,
-        customerName: customer.name || 'there',
-        address: [customer.address, customer.city, customer.zip].filter(Boolean).join(', '),
-        total: total * 100,
-        orderId,
-        items: items.map(item => ({
-          name: item.name || item.productId || item.id || 'Jewelry piece',
-          quantity: item.quantity,
-          price: Number(item.price) * 100,
-        })),
-      })
-      return res.status(200).json({ success: true, orderId })
-    } catch (error) {
-      console.error('[checkout] Concierge dispatch error:', error)
-      return res.status(502).json({ error: 'Failed to dispatch WhatsApp message' })
-    }
-  }
-
-  // Validate input
+  // Validate input against express-validator rules
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     const firstError = errors.array()[0].msg
@@ -111,25 +59,9 @@ exports.processCheckout = async (req, res) => {
 
   const { customerName, phone, address, cartItems } = req.body
 
-  // Validate cart is not empty
+  // Additional validation: cart cannot be empty
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     return res.status(400).json({ error: 'Cart cannot be empty.' })
-  }
-
-  // Normalize cart items (support both {id, qty} and {productId, quantity})
-  const normalizedCartItems = cartItems.map(item => ({
-    productId: item.productId || item.id,
-    quantity: item.quantity || item.qty,
-  }))
-
-  // Validate cart item structure
-  for (const item of normalizedCartItems) {
-    if (!item.productId || typeof item.productId !== 'string') {
-      return res.status(400).json({ error: 'Invalid cart item format.' })
-    }
-    if (!item.quantity || typeof item.quantity !== 'number' || item.quantity < 1 || item.quantity > 100) {
-      return res.status(400).json({ error: 'Invalid quantity. Must be between 1 and 100.' })
-    }
   }
 
   let client
@@ -137,78 +69,118 @@ exports.processCheckout = async (req, res) => {
     client = await pool.connect()
     await client.query('BEGIN')
 
-    // Fetch all product prices from database (server-side pricing)
-    const productIds = normalizedCartItems.map(item => item.productId)
+    // STEP 1: Validate that all productIds exist and fetch authoritative prices
+    // This ensures the client cannot manipulate the cart by sending fake product IDs.
+    const productIds = cartItems.map(item => item.productId)
+
+    // Check for duplicate product IDs (ambiguity prevention)
+    // Duplicates would allow the client to specify the same product twice
+    // with different quantities, creating confusion. Reject explicitly.
+    const uniqueIds = new Set(productIds)
+    if (uniqueIds.size !== productIds.length) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({
+        error: 'Cart contains duplicate product IDs. Please review your cart.'
+      })
+    }
+
+    // Query PostgreSQL for products
     const placeholders = productIds.map((_, i) => `$${i + 1}`).join(',')
-    
     const productResult = await client.query(
       `SELECT id, name, price_inr FROM products WHERE id IN (${placeholders})`,
       productIds
     )
 
-    // Check if all products exist
-    if (productResult.rows.length !== normalizedCartItems.length) {
-      if (client) await client.query('ROLLBACK')
-      return res.status(400).json({ error: 'One or more products not found.' })
+    // Verify all requested products exist
+    if (productResult.rows.length !== cartItems.length) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({
+        error: 'One or more products in your cart are no longer available.'
+      })
     }
 
-    // Create price lookup map
+    // Build product lookup map: productId → { name, price }
     const productMap = {}
-    productResult.rows.forEach(p => {
-      productMap[p.id] = { name: p.name, price: parseInt(p.price_inr) }
+    productResult.rows.forEach(row => {
+      productMap[row.id] = {
+        name: row.name,
+        price_inr: parseInt(row.price_inr, 10) // Price in paise
+      }
     })
 
-    // Calculate grand total (server-side only)
+    // STEP 2: Calculate grand total server-side using PostgreSQL prices
+    // Client-supplied prices, totals, discounts, or any other financial fields are IGNORED.
+    // All calculations are authoritative and performed server-side.
     let grandTotal = 0
-    for (const item of normalizedCartItems) {
+    const validatedItems = []
+
+    for (const item of cartItems) {
       const product = productMap[item.productId]
       if (!product) {
         await client.query('ROLLBACK')
-        return res.status(400).json({ error: `Product ${item.productId} not found.` })
+        return res.status(400).json({
+          error: `Product ${item.productId} is not available.`
+        })
       }
-      grandTotal += product.price * item.quantity
+
+      // Quantity was already validated by express-validator (must be 1-100 integer)
+      const quantity = parseInt(item.quantity, 10)
+      const itemTotal = product.price_inr * quantity
+
+      validatedItems.push({
+        productId: item.productId,
+        quantity,
+        pricePerUnit: product.price_inr // For audit trail
+      })
+
+      grandTotal += itemTotal
     }
 
-    // Generate unique 8-character order ID
-    const orderId = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
+    // STEP 3: Generate cryptographically-secure order ID
+    // Format: ORD-XXXXXXXX where X is from 4 bytes of secure random data.
+    // Sequential IDs are predictable and enable order enumeration attacks.
+    // Random IDs are opaque and safe for public exposure.
+    const orderIdSuffix = crypto.randomBytes(4).toString('hex').toUpperCase()
+    const orderId = `ORD-${orderIdSuffix}`
 
-    // Insert order into database
+    // STEP 4: Insert order into database with PENDING status in transaction
+    // Transaction ensures atomicity: either the entire order is created, or nothing is.
     await client.query(
       `INSERT INTO orders (id, customer_name, phone, address, cart_items, grand_total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')`,
-      [orderId, customerName, phone, address, JSON.stringify(normalizedCartItems), grandTotal]
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        orderId,
+        customerName,
+        phone,
+        address,
+        JSON.stringify(validatedItems), // Store validated items for audit trail
+        grandTotal, // Server-calculated total in paise
+        'PENDING' // Initial order status
+      ]
     )
 
+    // Commit transaction — order is now durable in the database
     await client.query('COMMIT')
 
-    console.log(`[checkout] Order created: ${orderId} | Total: ₹${(grandTotal / 100).toFixed(2)}`)
+    console.log(`[checkout] Order ${orderId} created | Customer: ${customerName} | Total: ₹${(grandTotal / 100).toFixed(2)}`)
 
-    await dispatchConciergeMessage({
-      phone,
-      customerName,
-      address,
-      total: grandTotal,
-      orderId,
-      items: normalizedCartItems.map(item => ({
-        name: productMap[item.productId].name,
-        price: productMap[item.productId].price,
-        quantity: item.quantity,
-      })),
-    })
-
+    // STEP 5: Return order ID to frontend for WhatsApp Click-to-Chat handoff
+    // The frontend will open WhatsApp with ONLY the order ID in the URL.
+    // Customer address, pricing, product details, and items remain server-side.
+    // They are intentionally excluded from the browser URL and WhatsApp message.
     res.json({
       orderId,
-      grandTotal,
+      grandTotal
     })
 
   } catch (err) {
     if (client) await client.query('ROLLBACK')
-    console.error('[checkout] Error processing order:', err)
+    console.error('[checkout] Database error:', err.message)
     res.status(500).json({ error: 'Failed to process checkout. Please try again.' })
   } finally {
     if (client) client.release()
   }
 }
 
-// Kept as the route handler name used by the existing checkout router.
+// Alias for route handler
 exports.submit = exports.processCheckout

@@ -66,8 +66,7 @@ export default function ProductDetail({ onCartOpen }) {
           </div>
 
           <ul className="pd__meta-list">
-            <li><span>Material</span><span>18k Gold Plated</span></li>
-            <li><span>Finish</span><span>Polished</span></li>
+            <li><span>Category</span><span>{product.category}</span></li>
             <li><span>Ships in</span><span>3–5 business days</span></li>
           </ul>
         </div>

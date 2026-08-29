@@ -22,7 +22,7 @@ export default function Collections() {
       <header className="collections__hero">
         <p className="collections__eyebrow">The collection / 2026</p>
         <h1>Sculpted<br />Silhouettes</h1>
-        <p>Hand-finished in 18k gold vermeil and solid 925 silver.</p>
+        <p>Carefully curated pieces in gold and silver.</p>
       </header>
       <div className="collections__toolbar">
         <span>{String(visible.length).padStart(2, '0')} pieces</span>
@@ -43,7 +43,6 @@ export default function Collections() {
               <button className="card__add" type="button" aria-label={`Add ${product.name} to cart`} onClick={(event) => { event.preventDefault(); addToCart(product) }}>+</button>
             </div>
             <div className="card__body">
-              <span className="card__tag">18K Gold Plated</span>
               <p className="card__name">{product.name}</p>
               <p className="card__price">{product.price}</p>
             </div>

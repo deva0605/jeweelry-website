@@ -18,6 +18,26 @@
   padding: 0 var(--sp-32);
 }
 
+/* ── Brand logo in nav ── */
+.wordmark {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.nav__logo {
+  height: 52px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+  display: block;
+}
+
+[data-theme="dark"] .nav__logo {
+  filter: brightness(0.9) contrast(1.1);
+}
+
 .nav__links {
   display: flex;
   align-items: center;

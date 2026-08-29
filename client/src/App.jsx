@@ -14,6 +14,7 @@ import Footer from './Footer'
 /* Hero & editorial images */
 import heroImg      from '../assests/WhatsApp Image 2026-08-24 at 11.38.09 PM.jpeg'
 import editorialImg from '../assests/WhatsApp Image 2026-08-24 at 11.39.23 PM (1).jpeg'
+import logoImg      from './assets/logo.jpg'
 
 /* ── Shared Nav ── */
 function Nav({ dark, setDark, onCartOpen }) {
@@ -32,7 +33,9 @@ function Nav({ dark, setDark, onCartOpen }) {
         <li><Link to="/journal" className="nav__link" onClick={closeMenu}>Journal</Link></li>
       </ul>
 
-      <Link to="/" className="wordmark" onClick={closeMenu}>Ushhh.atelier</Link>
+      <Link to="/" className="wordmark" onClick={closeMenu}>
+        <img src={logoImg} alt="Ushhh.atelier" className="nav__logo" />
+      </Link>
 
       <ul className="nav__links nav__links--actions">
         {user && (
@@ -168,7 +171,6 @@ function Home() {
                   <span>{p.code}</span>
                   <span>{p.category}</span>
                 </div>
-                <span className="card__tag">18K Gold Plated</span>
                 <p className="card__name">{p.name}</p>
                 <p className="card__price">{p.price}</p>
               </div>
@@ -189,15 +191,35 @@ function Home() {
             <h2 className="editorial__heading">
               Objects with<br />a point of view.
             </h2>
-            <a className="editorial__link" href="#collection">
+            <Link className="editorial__link" to="/journal">
               Read the journal <span>↗</span>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
 
       <Footer />
     </div>
+  )
+}
+
+/* ── Placeholder pages ── */
+function PlaceholderPage({ title, heading, content }) {
+  return (
+    <>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ maxWidth: '600px', textAlign: 'center' }}>
+          <h1 style={{ marginBottom: '1rem' }}>{heading}</h1>
+          <p style={{ fontSize: '1.1rem', color: '#666', lineHeight: 1.6, marginBottom: '2rem' }}>
+            {content}
+          </p>
+          <Link to="/" style={{ textDecoration: 'underline', color: '#000' }}>
+            ← Return to home
+          </Link>
+        </div>
+      </div>
+      <Footer />
+    </>
   )
 }
 
@@ -218,7 +240,11 @@ export default function App() {
         <Route path="/"            element={<Home />} />
         <Route path="/collections" element={<Collections />} />
         <Route path="/journal"     element={<Journal />} />
+        <Route path="/journal/:slug" element={<Journal />} />
         <Route path="/product/:id" element={<ProductDetail onCartOpen={() => setCartOpen(true)} />} />
+        <Route path="/care" element={<PlaceholderPage title="Care Guide" heading="Care Guide" content="Thoughtful guidance on caring for your jewelry pieces to ensure they remain beautiful for years to come." />} />
+        <Route path="/terms" element={<PlaceholderPage title="Terms of Service" heading="Terms of Service" content="Our terms and conditions govern your use of Ushhh.atelier." />} />
+        <Route path="/concierge" element={<PlaceholderPage title="Concierge" heading="Ushhh.atelier Concierge" content="Personalized assistance with your jewelry selections. Reach out via WhatsApp or email for dedicated support." />} />
       </Routes>
 
       {/* Cart drawer — rendered globally above all routes */}
