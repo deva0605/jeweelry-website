@@ -1,14 +1,15 @@
 /**
- * middleware/auth.js — JWT verification middleware.
- * Reads the token from the httpOnly cookie (never from Authorization header
- * or query string, which would be accessible to JS / server logs).
+ * middleware/auth.js — server-side authentication boundary.
+ * The browser is untrusted; we therefore read the JWT only from the httpOnly
+ * cookie, verify it against the server secret, and re-fetch the user record
+ * from PostgreSQL before trusting the identity.
  */
 
 'use strict'
 
-const jwt    = require('jsonwebtoken')
+const jwt = require('jsonwebtoken')
 const config = require('../config')
-const pool   = require('../db')
+const pool = require('../db')
 
 module.exports = async function requireAuth(req, res, next) {
   const token = req.cookies?.auth_token
@@ -19,14 +20,12 @@ module.exports = async function requireAuth(req, res, next) {
 
   let payload
   try {
-    payload = jwt.verify(token, config.jwt.secret)
-  } catch (err) {
-    // Do NOT expose whether the token is expired vs invalid
+    payload = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] })
+  } catch (_err) {
     return res.status(401).json({ error: 'Session expired. Please sign in again.' })
   }
 
   try {
-    // Re-fetch the user to catch deleted/suspended accounts
     const userResult = await pool.query(
       'SELECT id, name, email FROM users WHERE id = $1',
       [payload.sub]
@@ -37,7 +36,7 @@ module.exports = async function requireAuth(req, res, next) {
     }
 
     req.user = userResult.rows[0]
-    next()
+    return next()
   } catch (err) {
     console.error('[auth middleware] Error checking user:', err)
     return res.status(500).json({ error: 'Authentication check failed.' })
